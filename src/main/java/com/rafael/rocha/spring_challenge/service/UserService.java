@@ -22,8 +22,6 @@ public class UserService {
 
     @Autowired
     private UserRepository userRepository;
-
-    @Autowired
     private UserMapper userMapper;
 
     public List<UserResponseDTO> findAllUsers() {
@@ -111,6 +109,27 @@ public class UserService {
         } catch (Exception e) {
             log.error("updateUser() - ERROR - failed to update user with id[{}]", id, e);
             throw new BusinessException("Error updating user", e);
+        }
+    }
+
+    @Transactional
+    public void deleteUser(Long id) {
+        try {
+            log.info("Attempting to delete user with id: {}", id);
+
+            if (!userRepository.existsById(id)) {
+                log.error("User not found for deletion with id: {}", id);
+                throw new ResourceNotFoundException("User not found with id: " + id);
+            }
+
+            userRepository.deleteById(id);
+            log.info("Successfully deleted user with id: {}", id);
+
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Error deleting user with id: {}", id, e);
+            throw new BusinessException("Error deleting user", e);
         }
     }
 }
