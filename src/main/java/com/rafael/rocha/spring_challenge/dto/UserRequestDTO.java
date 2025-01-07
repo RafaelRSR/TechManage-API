@@ -1,10 +1,7 @@
 package com.rafael.rocha.spring_challenge.dto;
 
 import com.rafael.rocha.spring_challenge.model.enums.UserType;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Past;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.util.Date;
@@ -20,6 +17,8 @@ public class UserRequestDTO {
     private String email;
 
     @NotBlank(message = "Phone is required")
+    @Pattern(regexp = "^\\+[0-9][0-9 -]{8,}$",
+            message = "Phone number must match the international pattern (e.g: +55 11 98765-4321)")
     private String phone;
 
     @NotNull(message = "Birth date is required")
