@@ -1,4 +1,4 @@
-INSERT INTO users (full_name, email, phone, birth_date, user_type)
+INSERT IGNORE INTO users (full_name, email, phone, birth_date, user_type)
 VALUES
     ('LeBron James', 'lebron.james@nba.com', '+1 23 98765-4321', '1984-12-30', 'ADMIN'),
     ('Stephen Curry', 'stephen.curry@nba.com', '+1 23 98765-4322', '1988-03-14', 'EDITOR'),
