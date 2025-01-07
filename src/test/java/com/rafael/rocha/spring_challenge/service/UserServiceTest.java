@@ -2,7 +2,6 @@ package com.rafael.rocha.spring_challenge.service;
 
 import com.rafael.rocha.spring_challenge.dto.UserRequestDTO;
 import com.rafael.rocha.spring_challenge.dto.UserResponseDTO;
-import com.rafael.rocha.spring_challenge.exceptions.BusinessException;
 import com.rafael.rocha.spring_challenge.exceptions.ResourceNotFoundException;
 import com.rafael.rocha.spring_challenge.mapper.UserMapper;
 import com.rafael.rocha.spring_challenge.model.entity.User;
@@ -14,11 +13,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
@@ -63,42 +66,6 @@ class UserServiceTest {
     }
 
     @Test
-    void createUser_Success() {
-        when(userMapper.toEntity(any(UserRequestDTO.class))).thenReturn(user);
-        when(userRepository.save(any(User.class))).thenReturn(user);
-        when(userMapper.toDTO(any(User.class))).thenReturn(userResponseDTO);
-
-        UserResponseDTO result = userService.createUser(userRequestDTO);
-
-        assertNotNull(result);
-        assertEquals(userResponseDTO.getId(), result.getId());
-        assertEquals(userResponseDTO.getEmail(), result.getEmail());
-        verify(userRepository).save(any(User.class));
-    }
-
-    @Test
-    void createUser_ThrowsRuntimeException() {
-        when(userMapper.toEntity(any(UserRequestDTO.class))).thenThrow(new RuntimeException("Unexpected error"));
-
-        BusinessException exception = assertThrows(BusinessException.class,
-                () -> userService.createUser(userRequestDTO));
-
-        assertEquals("Error creating user", exception.getMessage());
-        verify(userRepository, never()).save(any(User.class));
-    }
-
-    @Test
-    void createUser_ThrowsBusinessException() {
-        when(userMapper.toEntity(any(UserRequestDTO.class))).thenThrow(new BusinessException("Business rule violation"));
-
-        BusinessException exception = assertThrows(BusinessException.class,
-                () -> userService.createUser(userRequestDTO));
-
-        assertEquals("Business rule violation", exception.getMessage());
-        verify(userRepository, never()).save(any());
-    }
-
-    @Test
     void findAllUsers_Success() {
         when(userRepository.findAll()).thenReturn(Collections.singletonList(user));
         when(userMapper.toDTO(any(User.class))).thenReturn(userResponseDTO);
@@ -109,16 +76,6 @@ class UserServiceTest {
         assertFalse(result.isEmpty());
         assertEquals(1, result.size());
         verify(userRepository).findAll();
-    }
-
-    @Test
-    void findAllUsers_ThrowsException() {
-        when(userRepository.findAll()).thenThrow(new RuntimeException("Database error"));
-
-        BusinessException exception = assertThrows(BusinessException.class,
-                () -> userService.findAllUsers());
-
-        assertEquals("Error retrieving users", exception.getMessage());
     }
 
     @Test
@@ -134,25 +91,29 @@ class UserServiceTest {
     }
 
     @Test
-    void getUserById_UserNotFound() {
+    void getUserById_NotFound() {
         when(userRepository.findById(anyLong())).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> userService.getUserById(1L));
-        verify(userRepository).findById(1L);
-    }
-
-    @Test
-    void getUserById_ThrowsException() {
-        when(userRepository.findById(anyLong())).thenThrow(new RuntimeException("Database error"));
-
-        BusinessException exception = assertThrows(BusinessException.class,
+        assertThrows(ResourceNotFoundException.class,
                 () -> userService.getUserById(1L));
-
-        assertEquals("Error retrieving user", exception.getMessage());
     }
 
     @Test
-    void updateUser_Success() {
+    void createUser_Success() {
+        when(userMapper.toEntity(any(UserRequestDTO.class))).thenReturn(user);
+        when(userRepository.save(any(User.class))).thenReturn(user);
+        when(userMapper.toDTO(any(User.class))).thenReturn(userResponseDTO);
+
+        UserResponseDTO result = userService.createUser(userRequestDTO);
+
+        assertNotNull(result);
+        assertEquals(userResponseDTO.getId(), result.getId());
+        assertEquals(userResponseDTO.getEmail(), result.getEmail());
+        verify(userRepository).save(any(User.class));
+    }
+
+    @Test
+    void updateUserById_Success() {
         when(userRepository.findById(anyLong())).thenReturn(Optional.of(user));
         when(userRepository.save(any(User.class))).thenReturn(user);
         when(userMapper.toDTO(any(User.class))).thenReturn(userResponseDTO);
@@ -165,50 +126,33 @@ class UserServiceTest {
     }
 
     @Test
-    void updateUser_UserNotFound() {
-        assertThrows(ResourceNotFoundException.class, () -> userService.updateUserById(1L, userRequestDTO));
-        verify(userRepository, never()).deleteById(anyLong());
-    }
+    void updateUserById_NotFound() {
+        when(userRepository.findById(anyLong())).thenReturn(Optional.empty());
 
-    @Test
-    void updateUser_ThrowsException() {
-        when(userRepository.findById(anyLong())).thenReturn(Optional.of(user));
-
-        when(userRepository.save(any(User.class))).thenThrow(new RuntimeException("Database error"));
-
-        BusinessException exception = assertThrows(BusinessException.class,
+        assertThrows(ResourceNotFoundException.class,
                 () -> userService.updateUserById(1L, userRequestDTO));
 
-        assertEquals("Error updating user", exception.getMessage());
-        verify(userMapper).updateUserFromDTO(any(), any());
-        verify(userRepository).findById(1L);
+        verify(userRepository, never()).save(any(User.class));
     }
 
     @Test
     void deleteUser_Success() {
-        when(userRepository.existsById(anyLong())).thenReturn(true);
-        doNothing().when(userRepository).deleteById(anyLong());
+        when(userRepository.findById(anyLong())).thenReturn(Optional.of(user));
+        doNothing().when(userRepository).delete(any(User.class));
 
-        assertDoesNotThrow(() -> userService.deleteUser(1L));
-        verify(userRepository).deleteById(1L);
+        assertDoesNotThrow(() -> userService.deleteUserById(1L));
+
+        verify(userRepository).findById(1L);
+        verify(userRepository).delete(user);
     }
 
     @Test
     void deleteUser_NotFound() {
-        when(userRepository.existsById(anyLong())).thenReturn(false);
+        when(userRepository.findById(anyLong())).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> userService.deleteUser(1L));
-        verify(userRepository, never()).deleteById(anyLong());
-    }
+        assertThrows(ResourceNotFoundException.class,
+                () -> userService.deleteUserById(1L));
 
-    @Test
-    void deleteUser_ThrowsException() {
-        when(userRepository.existsById(anyLong())).thenReturn(true);
-        doThrow(new RuntimeException("Database error")).when(userRepository).deleteById(anyLong());
-
-        BusinessException exception = assertThrows(BusinessException.class,
-                () -> userService.deleteUser(1L));
-
-        assertEquals("Error deleting user", exception.getMessage());
+        verify(userRepository, never()).delete(any(User.class));
     }
 }
