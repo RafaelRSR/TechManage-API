@@ -22,6 +22,8 @@ public class UserService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
     private UserMapper userMapper;
 
     public List<UserResponseDTO> findAllUsers() {
@@ -118,7 +120,7 @@ public class UserService {
             log.info("Attempting to delete user with id: {}", id);
 
             if (!userRepository.existsById(id)) {
-                log.error("User not found for deletion with id: {}", id);
+                log.error("User not found with id: {}", id);
                 throw new ResourceNotFoundException("User not found with id: " + id);
             }
 
